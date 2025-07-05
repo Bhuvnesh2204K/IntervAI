@@ -9,6 +9,7 @@ import {
   getInterviewsByUserId,
   getLatestInterviews,
 } from "@/lib/actions/general.action";
+import { getAllStaticCompanies, getStaticCompanyById } from "@/constants/staticCompanies";
 
 async function Home() {
   const user = await getCurrentUser();
@@ -21,6 +22,20 @@ async function Home() {
   const hasPastInterviews = userInterviews?.length! > 0;
   const hasUpcomingInterviews = allInterview?.length! > 0;
 
+  // Get all static companies
+  const staticCompanies = getAllStaticCompanies();
+  
+  // Filter static companies that the user hasn't completed yet
+  const availableStaticCompanies = staticCompanies.filter(staticCompany => {
+    // Check if user has already completed this static company interview
+    const hasCompleted = userInterviews?.some(interview => 
+      interview.role === staticCompany.role && 
+      interview.type === staticCompany.type &&
+      interview.techstack.join(',') === staticCompany.techstack.join(',')
+    );
+    return !hasCompleted;
+  });
+
   return (
     <>
       <section className="card-cta">
@@ -30,9 +45,14 @@ async function Home() {
             Practice real interview questions & get instant feedback
           </p>
 
-          <Button asChild className="btn-primary max-sm:w-full">
-            <Link href="/interview">Start an Interview</Link>
-          </Button>
+          <div className="flex gap-4 max-sm:flex-col">
+            <Button asChild className="btn-primary max-sm:w-full">
+              <Link href="/interview">Start an Interview</Link>
+            </Button>
+            <Button asChild variant="outline" className="max-sm:w-full">
+              <Link href="/prepare">Prepare First</Link>
+            </Button>
+          </div>
         </div>
 
         <Image
@@ -45,7 +65,14 @@ async function Home() {
       </section>
 
       <section className="flex flex-col gap-6 mt-8">
-        <h2>Your Interviews</h2>
+        <div className="flex justify-between items-center">
+          <h2>Your Interviews</h2>
+          {hasPastInterviews && (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/reset">Reset History</Link>
+            </Button>
+          )}
+        </div>
 
         <div className="interviews-section">
           {hasPastInterviews ? (
@@ -67,7 +94,12 @@ async function Home() {
       </section>
 
       <section className="flex flex-col gap-6 mt-8">
-        <h2>Take Interviews</h2>
+        <div className="flex justify-between items-center">
+          <h2>Take Interviews</h2>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/interview/create">Create Custom Interview</Link>
+          </Button>
+        </div>
 
         <div className="interviews-section">
           {hasUpcomingInterviews ? (
@@ -83,7 +115,17 @@ async function Home() {
               />
             ))
           ) : (
-            <p>There are no interviews available</p>
+            availableStaticCompanies.map((company) => (
+              <InterviewCard
+                key={company.id}
+                userId={user?.id}
+                interviewId={company.id}
+                role={company.role}
+                type={company.type}
+                techstack={company.techstack}
+                createdAt={Date.now().toString()}
+              />
+            ))
           )}
         </div>
       </section>

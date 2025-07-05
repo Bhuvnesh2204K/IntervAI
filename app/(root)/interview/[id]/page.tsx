@@ -10,11 +10,19 @@ import {
 } from "@/lib/actions/general.action";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import DisplayTechIcons from "@/components/DisplayTechIcons";
+import { getStaticCompanyById } from "@/constants/staticCompanies";
 
 const InterviewDetails = async ({ params }: RouteParams) => {
   const { id } = await params;
 
   const user = await getCurrentUser();
+
+  // Check if this is a static company
+  const staticCompany = getStaticCompanyById(id);
+  if (staticCompany) {
+    // Redirect to the static interview page
+    redirect(`/interview/static/${id.replace('static-', '')}`);
+  }
 
   const interview = await getInterviewById(id);
   if (!interview) redirect("/");
@@ -54,6 +62,9 @@ const InterviewDetails = async ({ params }: RouteParams) => {
         type="interview"
         questions={interview.questions}
         feedbackId={feedback?.id}
+        role={interview.role}
+        techstack={interview.techstack}
+        interviewType={interview.type}
       />
     </>
   );

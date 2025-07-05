@@ -7,6 +7,7 @@ import DisplayTechIcons from "./DisplayTechIcons";
 
 import { cn, getRandomInterviewCover } from "@/lib/utils";
 import { getFeedbackByInterviewId } from "@/lib/actions/general.action";
+import { getStaticCompanyById } from "@/constants/staticCompanies";
 
 const InterviewCard = async ({
   interviewId,
@@ -23,6 +24,9 @@ const InterviewCard = async ({
           userId,
         })
       : null;
+
+  // Check if this is a static company
+  const staticCompany = interviewId ? getStaticCompanyById(interviewId) : undefined;
 
   const normalizedType = /mix/gi.test(type) ? "Mixed" : type;
 
@@ -53,7 +57,7 @@ const InterviewCard = async ({
 
           {/* Cover Image */}
           <Image
-            src={getRandomInterviewCover()}
+            src={staticCompany?.coverImage || getRandomInterviewCover()}
             alt="cover-image"
             width={90}
             height={90}
@@ -77,7 +81,9 @@ const InterviewCard = async ({
 
             <div className="flex flex-row gap-2 items-center">
               <Image src="/star.svg" width={22} height={22} alt="star" />
-              <p>{feedback?.totalScore || "---"}/100</p>
+              <p className={`font-semibold text-lg ${feedback?.totalScore ? 'text-green-600' : 'text-gray-500'}`}>
+                {feedback?.totalScore ? `${feedback.totalScore}/100` : "---"}
+              </p>
             </div>
           </div>
 
@@ -96,6 +102,8 @@ const InterviewCard = async ({
               href={
                 feedback
                   ? `/interview/${interviewId}/feedback`
+                  : staticCompany && interviewId
+                  ? `/interview/static/${staticCompany.name.toLowerCase()}`
                   : `/interview/${interviewId}`
               }
             >

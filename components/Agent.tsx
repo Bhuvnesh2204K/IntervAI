@@ -7,7 +7,8 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
 import { interviewer } from "@/constants";
-import { createFeedback } from "@/lib/actions/general.action";
+import { createFeedback, createInterview, extractInterviewDetails, finalizeInterview } from "@/lib/actions/general.action";
+import { getBehavioralQuestionsForRole } from "@/constants/behavioralQuestions";
 
 enum CallStatus {
   INACTIVE = "INACTIVE",
@@ -28,12 +29,36 @@ const Agent = ({
   feedbackId,
   type,
   questions,
+  role,
+  techstack,
+  interviewType,
 }: AgentProps) => {
   const router = useRouter();
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [lastMessage, setLastMessage] = useState<string>("");
+
+  // Environment validation
+  useEffect(() => {
+    const token = process.env.NEXT_PUBLIC_VAPI_WEB_TOKEN;
+    const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
+    
+    console.log("Environment check:", {
+      hasVapiToken: !!token,
+      hasAssistantId: !!assistantId,
+      tokenLength: token?.length,
+      assistantIdLength: assistantId?.length,
+    });
+    
+    if (!token) {
+      console.error("NEXT_PUBLIC_VAPI_WEB_TOKEN is missing");
+    }
+    
+    if (!assistantId) {
+      console.error("NEXT_PUBLIC_VAPI_ASSISTANT_ID is missing");
+    }
+  }, []);
 
   useEffect(() => {
     const onCallStart = () => {
@@ -63,6 +88,17 @@ const Agent = ({
 
     const onError = (error: Error) => {
       console.log("Error:", error);
+      
+      // Handle specific error types
+      if (error.message?.includes("ejection")) {
+        console.log("Call was ejected - this might be due to network issues or browser permissions");
+      } else if (error.message?.includes("permission")) {
+        console.log("Microphone permission denied - please allow microphone access");
+      } else if (error.message?.includes("network")) {
+        console.log("Network error - please check your internet connection");
+      }
+      
+      setCallStatus(CallStatus.INACTIVE);
     };
 
     vapi.on("call-start", onCallStart);
@@ -105,38 +141,192 @@ const Agent = ({
       }
     };
 
+    const handleSaveInterview = async () => {
+      if (!userId) return;
+      if (!messages || messages.length === 0) {
+        console.warn("No transcript messages to extract interview details from.");
+        return;
+      }
+      
+      // For interviews that already have an ID (including static interviews), just finalize them
+      if (interviewId) {
+        const finalizeResult = await finalizeInterview(interviewId);
+        if (finalizeResult?.success) {
+          console.log("Interview finalized successfully");
+        } else {
+          console.error("Failed to finalize interview");
+        }
+        return;
+      }
+      
+      // Extract interview details from transcript for dynamic interviews
+      const details = await extractInterviewDetails(messages);
+      if (!details) {
+        console.warn("AI extraction failed, saving default interview.");
+        await createInterview({
+          userId,
+          role: role || "Software Engineer",
+          type: interviewType || "Technical",
+          techstack: techstack || ["react", "nodejs", "aws"],
+          finalized: true,
+        });
+        return;
+      }
+      const result = await createInterview({
+        userId,
+        role: details.role,
+        type: details.type,
+        techstack: details.techstack,
+        finalized: true,
+      });
+      if (!result?.success) {
+        console.error("Interview creation failed.", result);
+      } else {
+        console.log("Interview saved successfully.", result);
+      }
+    };
+
     if (callStatus === CallStatus.FINISHED) {
+      handleSaveInterview();
       if (type === "generate") {
         router.push("/");
       } else {
         handleGenerateFeedback(messages);
       }
     }
-  }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
+  }, [messages, callStatus, feedbackId, interviewId, router, type, userId, role, techstack, interviewType]);
 
   const handleCall = async () => {
-    setCallStatus(CallStatus.CONNECTING);
+    try {
+      console.log("handleCall triggered");
+      console.log("Props:", { userName, userId, interviewId, feedbackId, type, questions, role, techstack, interviewType });
+      setCallStatus(CallStatus.CONNECTING);
 
-    if (type === "generate") {
-      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
-        variableValues: {
-          username: userName,
-          userid: userId,
-        },
-      });
-    } else {
-      let formattedQuestions = "";
-      if (questions) {
-        formattedQuestions = questions
-          .map((question) => `- ${question}`)
-          .join("\n");
+      // Debug: Check if token is available
+      const token = process.env.NEXT_PUBLIC_VAPI_WEB_TOKEN;
+      console.log("Vapi token available:", !!token);
+      console.log("Token length:", token?.length);
+      console.log("Token starts with:", token?.substring(0, 10) + "...");
+      
+      if (!token) {
+        throw new Error("VAPI_WEB_TOKEN is not configured");
       }
 
-      await vapi.start(interviewer, {
-        variableValues: {
-          questions: formattedQuestions,
-        },
+      // Debug: Check Vapi instance
+      console.log("Vapi instance:", vapi);
+      console.log("Vapi instance type:", typeof vapi);
+
+      if (type === "generate") {
+        // For assistant-based calls (using assistant ID)
+        const assistantId = process.env.NEXT_PUBLIC_VAPI_ASSISTANT_ID;
+        if (!assistantId) {
+          throw new Error("NEXT_PUBLIC_VAPI_ASSISTANT_ID is not configured");
+        }
+        
+        console.log("Starting assistant call with ID:", assistantId);
+        await vapi.start(assistantId, {
+          variableValues: {
+            username: userName,
+            userid: userId,
+          },
+        });
+      } else {
+        // For interview-based calls, use dynamic assistant config
+        let formattedQuestions = "";
+        if (questions && questions.length > 0) {
+          formattedQuestions = questions
+            .map((question) => `- ${question}`)
+            .join("\n");
+        }
+
+        // Get questions based on interview type
+        let technicalQuestionsPrompt = "";
+        let behavioralQuestionsPrompt = "";
+        
+        if (interviewType === "Technical" || interviewType === "Mixed") {
+          // Include technical questions
+          if (questions && questions.length > 0) {
+            const formattedQuestions = questions
+              .map((question) => `- ${question}`)
+              .join("\n");
+            technicalQuestionsPrompt = `\n\nTECHNICAL QUESTIONS TO ASK:\n${formattedQuestions}`;
+          }
+        }
+        
+        if (interviewType === "Behavioral" || interviewType === "Mixed") {
+          // Include behavioral questions
+          const behavioralQuestions = getBehavioralQuestionsForRole(role || "Software Engineer", 3);
+          const formattedBehavioralQuestions = behavioralQuestions
+            .map((q, index) => `${index + 1}. ${q.question}`)
+            .join("\n");
+          behavioralQuestionsPrompt = `\n\nBEHAVIORAL QUESTIONS TO ASK:\n${formattedBehavioralQuestions}`;
+        }
+
+        const jobProfilePrompt = `INTERVIEW JOB PROFILE:\n- Role: ${role || "Software Engineer"}\n- Tech Stack: ${(techstack && techstack.length > 0) ? techstack.join(", ") : "General"}\n- Type: ${interviewType || "Mixed"}`;
+        
+        const basePrompt = interviewer.model && interviewer.model.messages && interviewer.model.messages[0]?.content ? `\n\n${interviewer.model.messages[0].content}` : "";
+        const finalPrompt = `${jobProfilePrompt}${technicalQuestionsPrompt}${behavioralQuestionsPrompt}${basePrompt}`;
+        console.log("Final system prompt for assistant:", finalPrompt);
+
+        // Set appropriate first message based on interview type
+        let firstMessage = interviewer.firstMessage;
+        if (interviewType === "Technical") {
+          firstMessage = "Hello! I'm your interviewer today. I'll be asking you technical questions to assess your programming skills, problem-solving abilities, and technical knowledge. Please speak clearly and take your time with your responses.";
+        } else if (interviewType === "Behavioral") {
+          firstMessage = "Hello! I'm your interviewer today. I'll be asking you behavioral questions to assess your soft skills, past experiences, and how you handle various situations. Please speak clearly and take your time with your responses.";
+        } else if (interviewType === "Mixed") {
+          firstMessage = "Hello! I'm your interviewer today. I'll be asking you a mix of technical and behavioral questions to assess your skills, experience, and problem-solving abilities. Please speak clearly and take your time with your responses.";
+        }
+
+        const dynamicAssistant = {
+          ...interviewer,
+          name: role ? `${role} Interviewer` : interviewer.name,
+          firstMessage: firstMessage,
+          model: {
+            provider: "openai" as const,
+            model: "gpt-4",
+            messages: [
+              {
+                role: "system" as const,
+                content: finalPrompt,
+              },
+            ],
+          },
+        };
+
+        console.log("Starting dynamic interview for role:", role, "techstack:", techstack, "type:", interviewType);
+        console.log("Dynamic assistant config:", dynamicAssistant);
+        
+        // Add more detailed error handling for the vapi.start call
+        try {
+          await vapi.start(dynamicAssistant as any, {
+            variableValues: {
+              questions: formattedQuestions,
+            },
+          });
+          console.log("Vapi call started successfully");
+        } catch (vapiError) {
+          console.error("Vapi start error details:", {
+            error: vapiError,
+            message: (vapiError as any)?.message,
+            status: (vapiError as any)?.status,
+            response: (vapiError as any)?.response,
+          });
+          throw vapiError;
+        }
+      }
+    } catch (error) {
+      // Enhanced error logging
+      const err = error as any;
+      console.error("Error starting call:", {
+        error: error,
+        message: err?.message,
+        status: err?.status,
+        response: err?.response,
+        stack: err?.stack,
       });
+      setCallStatus(CallStatus.INACTIVE);
+      // Optionally, show a user-friendly error message here
     }
   };
 
