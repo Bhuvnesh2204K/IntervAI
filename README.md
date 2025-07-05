@@ -65,26 +65,19 @@ A Next.js application that provides AI-powered mock interviews with real-time vo
 3. **Environment Setup**
    Create a `.env.local` file in the root directory:
    ```env
-   # Firebase Configuration
-   FIREBASE_PROJECT_ID=your-project-id
-   FIREBASE_CLIENT_EMAIL=your-client-email
-   FIREBASE_PRIVATE_KEY="your-private-key"
-   NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-
-   # Vapi.ai Configuration
-   NEXT_PUBLIC_VAPI_WEB_TOKEN=your-vapi-web-token
-   NEXT_PUBLIC_VAPI_ASSISTANT_ID=your-assistant-id
-
-   # Google Generative AI
-   GOOGLE_GENERATIVE_AI_API_KEY=your-gemini-api-key
-
-   # Deepgram (for transcription)
-   DEEPGRAM_API_KEY=your-deepgram-api-key
+FIREBASE_PROJECT_ID=interviewwallah-d7387
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@interviewwallah-d7387.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCp4YfSvzyNiSu1\nHT58o1KOEY/6izZu7Ye+/+RLUtxT5FYzZPGjTYYUNx+CTr+Ie00csK9JjFWbatKb\nuXvkM6ucscXBTGYSphTwstNAVfBwaEmG/6PCim9gnCLeRrMhMu6WGoqtpWQ1/1SV\n3B4rkR755wGDQSnHFrUU+ryfh0/DeGIZ+USCLn7OOh0S7UXlVQZ/bBR5+V009ZsZ\n9LM4z9hHixJXZC1J3KCtaWuYjoxwq0jOAVr7/4jNUNhdVLaIWvZM1N6yM7zF6AfI\nPcPgAHZ6wZZokI7kluG0kbkvatEpQDbty17byeURxceRSOOgQs0ioYlY6C+Fa2yC\n4APGtmxLAgMBAAECggEABBPs1leJ6KTFSeT9bgAGj6uLyq78pINU1YniLlKKBWda\nI+bC8124fTZaJEZikOtJF0VKevMZMW4Y7rvcjRU9q0LatnQhuArhUkMIpIShvlwX\nbA0pgO75nUzCLYL4Lab8ywDYQLyEdkq+XNBkYLMxUYtxBGSPMo3/hgFSMLddVGiD\nkXcTwLTmc6maLiz8Ez22gMDkFeaNbVJkXEf5ZnuifPfFGlFkPz4Ye192UuE+oJ7E\nyA/BLfvdVF3/qc8658/Q93zl2ROpFvjVxhziyfoBeGQkUvqRGbu8K9iTf3qFwvn1\nqm5KFmlfLY1avUEi7Iyo5PDh61OYheaF0srzb/8QkQKBgQDbhiVPmOYV+1eBg8Yy\nLYE5ykUhBZZ7vFW3i+7X1aQ+m2w1tQ0A1D5PLFfWQ+uXOzSFAIl2JNcgr1KAL5Gq\nQg3iBX+RlEVnfpQpJf8Bw9wIcgsgrSt0djV6GjyEVSbI/PMGwmismHNQ/R+qH8+w\nuanmed9q91IW7qJSJXaiL0wBIwKBgQDGG7pfX0TQ7gPK7MIksWPh/KoWfPUMBuFi\nHLINdYDJwUiY0udpPhJT0Z3oBGFrjGKYlN0Sr3T6CT+RwQNCm3RSHeWDbEWUYLAx\nEkvuK29QMJUL3MwmFh6mkpaBaiQine7Gbmmo0sEO9FqpKssl+8hLx6Axf9IHxaT7\n9UNqP/KeuQKBgQDWbCtZmlFzuzN4EEyxin0lA4uOe7THW+imBgrfy5BIjuudciEn\nZCkQkJGjemhOKchc+W9LdSSkiludVdmEYkzJLvGyMw+vzZXOs4xoHvV3Ul3IJx3A\n/g2yHJpr7/iYbWq8eXxgyfApdXVOaRAm4NMxim1OQBFw0NrAPlOoi2ZD3QKBgQCt\n2NFRNkImcmgjoGayWnTDcL015MwJlNQeC/537yBobFQvwAxQ/6aHpZBDdeyju1se\neKwT5KLrdEgzuMQKpG6MTS4GiXH5xmt3dI3rYHRbU3bIJSeFWK3nEQZAZQt20U8j\nFOtluiSu4eHZR/NjzrKzRWgfaALAzUF91XomeB2KCQKBgBuDv+GOa5Gqy7bISRLv\nfV4QqaboZgmeLvrNYc+fTf+exlht0rsSQD4NaCl7eBA7e1ItdZuvTi74UtaJVca/\n4oxgtx7rLvfgX8ziz45R11DYn6MYAn0wBILcrZfaLpTn7LvXTEBsFIvqoDJj4EpN\nYfxk3IIbY4aoi1LHdjvxQTIX\n-----END PRIVATE KEY-----\n"
+   NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyC9NN_LjVQfjKUxVVOU8Qvu63jWrikxBs8
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=interviewwallah-d7387.firebaseapp.com
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=interviewwallah-d7387
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=interviewwallah-d7387.firebasestorage.app
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=837804654900
+   NEXT_PUBLIC_FIREBASE_APP_ID=1:837804654900:web:454bcc56cb49812dede561
+   NEXT_PUBLIC_VAPI_WEB_TOKEN=b06e7159-2484-4480-86f6-e015d6a890c7
+   NEXT_PUBLIC_VAPI_WORKFLOW_ID=d24ceedf-0586-45c6-a5c8-194024059bc3
+   NEXT_PUBLIC_VAPI_ASSISTANT_ID=94f01cd4-66bb-4b70-baf5-2c4b2ba2e69a
+   GOOGLE_GENERATIVE_AI_API_KEY=AIzaSyCX429dT7RZURRAaHFuqQOjMFOvrBiIGdE
    ```
 
 4. **Firebase Setup**
